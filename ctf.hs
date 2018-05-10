@@ -56,18 +56,23 @@ move2Right currBoard piece index boardSize
  | piece == 'w' && index+2 < boardSize^2 && (index+1) `mod` boardSize /= 0 && (index+2) `mod` boardSize /= 0 && currBoard!!(index+2) == '-' && (currBoard!!(index+1) == 'b' || currBoard!!(index+1) == 'B') = replaceNth (index+2) piece (replaceNth index '-' (replaceNth (index+1) '-' currBoard))
  | otherwise = []
 
+-- | Takes a list of board strings and prints out each one as a square board
 printAllBoards :: [[Char]] -> IO()
 printAllBoards boards = putStr (printAllBoardsHelper boards [])
 
+-- | Tail Recursive helper. Stores the output in 'print'
+-- | Goes through every board string and calls printBoardHelper for it
 printAllBoardsHelper :: [[Char]] -> [Char] -> [Char]
 printAllBoardsHelper boards print
  | boards == [] = print
  | otherwise = printAllBoardsHelper (tail boards) ((print ++ printBoardHelper (head boards) (boardSize (head boards)) 1 []))
 
+-- | Not used
+-- printBoard :: [Char] -> Int -> [Char] -> IO()
+-- printBoard board boardSize print = putStr (printBoardHelper board boardSize 1 [])
 
---printBoard :: [Char] -> Int -> [Char] -> IO()
---printBoard board boardSize print = putStr (printBoardHelper board boardSize 1 [])
-
+-- | Tail Recursive helper. Stores the output in 'print'
+-- | Breaks down a board string using board size.
 printBoardHelper :: [Char] -> Int -> Int -> [Char] -> [Char]
 printBoardHelper board bSize column print
  | board == "" = "\n" ++ print

@@ -1,6 +1,8 @@
 import Data.List
 import Data.Char
 
+boardSize board = (round (sqrt (fromIntegral (length board))))
+
 genMoves :: [Char] -> [[Char]] -> [Int]-> [[Char]] -> [[Char]]
 genMoves board history indices moves
  | indices == [] = filter (\n -> not (elem n history)) (filter (not . null) moves)
@@ -54,22 +56,23 @@ move2Right currBoard piece index boardSize
  | piece == 'w' && index+2 < boardSize^2 && (index+1) `mod` boardSize /= 0 && (index+2) `mod` boardSize /= 0 && currBoard!!(index+2) == '-' && (currBoard!!(index+1) == 'b' || currBoard!!(index+1) == 'B') = replaceNth (index+2) piece (replaceNth index '-' (replaceNth (index+1) '-' currBoard))
  | otherwise = []
 
-printAllBoards :: [[Char]] -> Int -> Int -> [Char] -> IO()
-printAllBoards boards boardSize column print = putStr (printAllBoardsHelper boards boardSize 1 print)
+printAllBoards :: [[Char]] -> IO()
+printAllBoards boards = putStr (printAllBoardsHelper boards [])
 
-printAllBoardsHelper :: [[Char]] -> Int -> Int ->[Char] -> [Char]
-printAllBoardsHelper boards boardSize column print
+printAllBoardsHelper :: [[Char]] -> [Char] -> [Char]
+printAllBoardsHelper boards print
  | boards == [] = print
- | otherwise = printAllBoardsHelper (tail boards) boardSize 1 ((print ++ printBoardHelper (head boards) boardSize 1 []))
+ | otherwise = printAllBoardsHelper (tail boards) ((print ++ printBoardHelper (head boards) (boardSize (head boards)) 1 []))
 
-printBoard :: [Char] -> Int -> Int -> [Char] -> IO()
-printBoard board boardSize column print = putStr (printBoardHelper board boardSize column [])
+
+--printBoard :: [Char] -> Int -> [Char] -> IO()
+--printBoard board boardSize print = putStr (printBoardHelper board boardSize 1 [])
 
 printBoardHelper :: [Char] -> Int -> Int -> [Char] -> [Char]
-printBoardHelper board boardSize column print
+printBoardHelper board bSize column print
  | board == "" = "\n" ++ print
- | column == boardSize = print ++ [(head board)] ++ " " ++ "\n" ++ printBoardHelper (tail board) boardSize 1 print
- | otherwise = print ++ [(head board)] ++ " " ++ (printBoardHelper (tail board) boardSize (column+1) print)
+ | column == bSize = print ++ [(head board)] ++ " " ++ "\n" ++ printBoardHelper (tail board) bSize 1 print
+ | otherwise = print ++ [(head board)] ++ " " ++ (printBoardHelper (tail board) bSize (column+1) print)
 
 replaceNth :: Int -> Char -> [Char] -> [Char]
 replaceNth index new (x:xs)

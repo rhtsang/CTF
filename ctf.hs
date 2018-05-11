@@ -52,7 +52,8 @@ move1Right currBoard  index boardSize
 
 move2Up :: [Char] -> Int->  Int -> [Char]
 move2Up currBoard  index boardSize
- | (currBoard!!index) == 'b' && index-(2*boardSize) >= 0 &&
+ | (currBoard!!index) == 'b' &&
+   index-(2*boardSize) >= 0 &&
    currBoard!!(index-(2*boardSize)) == '-' &&
    (currBoard!!(index-boardSize) == 'w' ||
    currBoard!!(index-boardSize) == 'W')
@@ -61,7 +62,8 @@ move2Up currBoard  index boardSize
 
 move2Down :: [Char] -> Int->  Int -> [Char]
 move2Down currBoard  index boardSize
- | (currBoard!!index) == 'w' && index+(2*boardSize) < boardSize^2 &&
+ | (currBoard!!index) == 'w' &&
+   index+(2*boardSize) < boardSize^2 &&
    currBoard!!(index+(2*boardSize)) == '-' &&
    (currBoard!!(index+boardSize) == 'b' ||
    currBoard!!(index+boardSize) == 'B')

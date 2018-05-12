@@ -13,7 +13,7 @@ import Data.Char
  8  9 10 11
 12 13 14 15
 
-5x5 
+5x5
  0  1  2  3  4
  5  6  7  8  9
 10 11 12 13 14
@@ -42,16 +42,19 @@ evalWhitePieces (x:xs)
 countOccurance :: Char -> [Char] -> Int
 countOccurance x list = (length . filter (==x)) list
 
+-- | Calculates the dimension of the board
 boardSize board = (round (sqrt (fromIntegral (length board))))
 
+-- | Given a board and a history of moves and a list of pieces (indices)
+-- | generates all possible moves for the given pieces
 genMoves :: [Char] -> [[Char]] -> [Int]-> [[Char]] -> [[Char]]
-genMoves board history []      moves = filter (\n -> not (elem n history)) (filter (not . null) moves)
-genMoves board history indices moves = genMoves board history (tail indices)
-                                       (moves++(genMovesHelper board (boardSize board) indices))
+genMoves board history [] moves = filter (\n -> not (elem n history)) (filter (not . null) moves)
+genMoves board history (i:indices) moves = genMoves board history indices
+                                       (moves++(genMovesHelper board (boardSize board) i))
 
-genMovesHelper :: [Char] -> Int -> [Int] -> [[Char]]
-genMovesHelper board size []          = []
-genMovesHelper board size (i:indices) =
+-- | Creates all the possible moves for a single piece i
+genMovesHelper :: [Char] -> Int -> Int -> [[Char]]
+genMovesHelper board size i =
     [move1Up    board size i]++
     [move1Down  board size i]++
     [move1Left  board size i]++

@@ -13,7 +13,9 @@ import Data.Char
 -- | Default 5x5 board
 test1 = printAllBoards (genMoves "-wWw--www-------bbb--bBb-" [] [6,7] [])
 test2 = printAllBoards (genMoves "-wWw-w-ww-------bbb--bBb-" ["-wWw--www-------bbb--bBb-"] [6,7] [])
-test3 = printAllBoards (genMoves "-Ww---bB-" [] [2] [])
+test3 = printAllBoards (genMoves "-Ww---bB-" [] [1, 2] [])
+test4 = printAllBoards (genMoves "-W---b-Bw" [] [1, 8] [])
+test5 = map evalWhitePieces (genMoves "-W---b-Bw" [] [1, 8] [])
 
 -- | Static eval of board for white by counting pieces. Kings 10, pawns 1.
 evalWhitePieces :: [Char] -> Int
@@ -33,37 +35,37 @@ boardSize board = (round (sqrt (fromIntegral (length board))))
 
 genMoves :: [Char] -> [[Char]] -> [Int]-> [[Char]] -> [[Char]]
 genMoves board history []      moves = filter (\n -> not (elem n history)) (filter (not . null) moves)
-genMoves board history indices moves = genMoves board history (tail indices) (moves++(genMovesHelper board indices))
+genMoves board history indices moves = genMoves board history (tail indices) (moves++(genMovesHelper board (boardSize board) indices))
 
-genMovesHelper :: [Char] -> [Int] -> [[Char]]
-genMovesHelper board [] = []
-genMovesHelper board indices =
-    [move1Up board (head indices) (boardSize board)]++
-    [move1Down board (head indices) (boardSize board)]++
-    [move1Left board (head indices) (boardSize board)]++
-    [move1Right board (head indices) (boardSize board)]++
-    [move2Up board (head indices) (boardSize board)]++
-    [move2Down board (head indices) (boardSize board)]++
-    [move2Left board (head indices) (boardSize board)]++
-    [move2Right board (head indices) (boardSize board)]
+genMovesHelper :: [Char] -> Int -> [Int] -> [[Char]]
+genMovesHelper board size []          = []
+genMovesHelper board size (i:indices) =
+    [move1Up    board size i]++
+    [move1Down  board size i]++
+    [move1Left  board size i]++
+    [move1Right board size i]++
+    [move2Up    board size i]++
+    [move2Down  board size i]++
+    [move2Left  board size i]++
+    [move2Right board size i]
 
 
 move1Up :: [Char] -> Int->  Int -> [Char]
-move1Up currBoard index boardSize
+move1Up currBoard boardSize index
  | index-boardSize >= 0 &&
    currBoard!!(index-boardSize) == '-'
     = replaceNth index '-' (replaceNth (index-boardSize) (currBoard!!index) currBoard)
  | otherwise = []
 
 move1Down :: [Char] -> Int->  Int -> [Char]
-move1Down currBoard  index boardSize
+move1Down currBoard  boardSize index
  | index+boardSize < boardSize^2 &&
    currBoard!!(index+boardSize) == '-'
     = replaceNth index '-' (replaceNth (index+boardSize) (currBoard!!index) currBoard)
  | otherwise = []
 
 move1Left :: [Char] -> Int->  Int -> [Char]
-move1Left currBoard  index boardSize
+move1Left currBoard  boardSize index
  | index-1 >= 0 &&
    index `mod` boardSize /= 0 &&
    currBoard!!(index-1) == '-'
@@ -71,15 +73,16 @@ move1Left currBoard  index boardSize
  | otherwise = []
 
 move1Right :: [Char] -> Int->  Int -> [Char]
-move1Right currBoard  index boardSize
+move1Right currBoard  boardSize index
  | index+1 < boardSize^2 &&
    (index+1) `mod` boardSize /= 0 &&
    currBoard!!(index+1) == '-'
     = replaceNth index '-' (replaceNth (index+1) (currBoard!!index) currBoard)
  | otherwise = []
 
+-- | Only black pawns can move 2 up and they have to jump over w or W
 move2Up :: [Char] -> Int->  Int -> [Char]
-move2Up currBoard  index boardSize
+move2Up currBoard  boardSize index
  | (currBoard!!index) == 'b' &&
    index-(2*boardSize) >= 0 &&
    currBoard!!(index-(2*boardSize)) == '-' &&
@@ -88,8 +91,9 @@ move2Up currBoard  index boardSize
     = replaceNth (index-(2*boardSize)) (currBoard!!index) (replaceNth index '-' (replaceNth (index-boardSize) '-' currBoard))
  | otherwise = []
 
+-- | Only white pawns can move 2 down and they have to jump over b or B
 move2Down :: [Char] -> Int->  Int -> [Char]
-move2Down currBoard  index boardSize
+move2Down currBoard  boardSize index
  | (currBoard!!index) == 'w' &&
    index+(2*boardSize) < boardSize^2 &&
    currBoard!!(index+(2*boardSize)) == '-' &&
@@ -99,7 +103,7 @@ move2Down currBoard  index boardSize
  | otherwise = []
 
 move2Left :: [Char] -> Int->  Int -> [Char]
-move2Left currBoard  index boardSize
+move2Left currBoard  boardSize index
  | (currBoard!!index) == 'b' &&
    index-2 >= 0 &&
    (index-1) `mod` boardSize /= 0 &&
@@ -119,7 +123,7 @@ move2Left currBoard  index boardSize
  | otherwise = []
 
 move2Right :: [Char] -> Int->  Int -> [Char]
-move2Right currBoard index boardSize
+move2Right currBoard boardSize index
  | (currBoard!!index) == 'b' &&
    index+2 < boardSize^2 &&
    (index+1) `mod` boardSize /= 0 &&
@@ -150,8 +154,8 @@ printAllBoardsHelper boards print
  | otherwise = printAllBoardsHelper (tail boards) ((print ++ printBoardHelper (head boards) (boardSize (head boards)) 1 []))
 
 -- | Not used
--- printBoard :: [Char] -> Int -> [Char] -> IO()
--- printBoard board boardSize print = putStr (printBoardHelper board boardSize 1 [])
+-- | printBoard :: [Char] -> IO()
+-- | printBoard board = putStr (printBoardHelper board (boardSize board) 1 [])
 
 -- | Tail Recursive helper. Stores the output in 'print'
 -- | Breaks down a board string using board size.

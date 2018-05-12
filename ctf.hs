@@ -26,7 +26,8 @@ test1 = printAllBoards (genMoves "-wWw--www-------bbb--bBb-" [] [6,7] [])
 test2 = printAllBoards (genMoves "-wWw-w-ww-------bbb--bBb-" ["-wWw--www-------bbb--bBb-"] [6,7] [])
 test3 = printAllBoards (genMoves "-Ww---bB-" [] [1, 2] [])
 test4 = printAllBoards (genMoves "-W---b-Bw" [] [1, 8] [])
-test5 = map evalWhitePieces (genMoves "-W---b-Bw" [] [1, 8] [])
+test5 = map evalWhitePieces (genMoves "bW---b-Bw" [] [0, 8] [])
+test5p = printAllBoards (genMoves "bW---b-Bw" [] [0, 8] [])
 
 -- | Static eval of board for white by counting pieces. Kings 10, pawns 1.
 evalWhitePieces :: [Char] -> Int
@@ -66,95 +67,77 @@ genMovesHelper board size i =
 
 
 move1Up :: [Char] -> Int->  Int -> [Char]
-move1Up currBoard boardSize index
- | index-boardSize >= 0 &&
-   currBoard!!(index-boardSize) == '-'
-    = replaceNth index '-' (replaceNth (index-boardSize) (currBoard!!index) currBoard)
+move1Up board size i
+ | i-size >= 0 &&
+   board!!(i-size) == '-'
+    = replaceNth i '-' (replaceNth (i-size) (board!!i) board)
  | otherwise = []
 
 move1Down :: [Char] -> Int->  Int -> [Char]
-move1Down currBoard  boardSize index
- | index+boardSize < boardSize^2 &&
-   currBoard!!(index+boardSize) == '-'
-    = replaceNth index '-' (replaceNth (index+boardSize) (currBoard!!index) currBoard)
+move1Down board size i
+ | i+size < size^2 &&
+   board!!(i+size) == '-'
+    = replaceNth i '-' (replaceNth (i+size) (board!!i) board)
  | otherwise = []
 
 move1Left :: [Char] -> Int->  Int -> [Char]
-move1Left currBoard  boardSize index
- | index-1 >= 0 &&
-   index `mod` boardSize /= 0 &&
-   currBoard!!(index-1) == '-'
-    = replaceNth index '-' (replaceNth (index-1) (currBoard!!index) currBoard)
+move1Left board size i
+ | i-1 >= 0 &&
+   i `mod` size /= 0 &&
+   board!!(i-1) == '-'
+    = replaceNth i '-' (replaceNth (i-1) (board!!i) board)
  | otherwise = []
 
 move1Right :: [Char] -> Int->  Int -> [Char]
-move1Right currBoard  boardSize index
- | index+1 < boardSize^2 &&
-   (index+1) `mod` boardSize /= 0 &&
-   currBoard!!(index+1) == '-'
-    = replaceNth index '-' (replaceNth (index+1) (currBoard!!index) currBoard)
+move1Right board  size i
+ | i+1 < size^2 &&
+   (i+1) `mod` size /= 0 &&
+   board!!(i+1) == '-'
+    = replaceNth i '-' (replaceNth (i+1) (board!!i) board)
  | otherwise = []
 
 -- | Only black pawns can move 2 up and they have to jump over w or W
 move2Up :: [Char] -> Int->  Int -> [Char]
-move2Up currBoard  boardSize index
- | (currBoard!!index) == 'b' &&
-   index-(2*boardSize) >= 0 &&
-   currBoard!!(index-(2*boardSize)) == '-' &&
-   (currBoard!!(index-boardSize) == 'w' ||
-   currBoard!!(index-boardSize) == 'W')
-    = replaceNth (index-(2*boardSize)) (currBoard!!index) (replaceNth index '-' (replaceNth (index-boardSize) '-' currBoard))
+move2Up board  size i
+ | (board!!i) == 'b' &&
+   i-(2*size) >= 0 &&
+   board!!(i-(2*size)) == '-' &&
+   (board!!(i-size) == 'w' || board!!(i-size) == 'W')
+    = replaceNth (i-(2*size)) (board!!i) (replaceNth i '-' (replaceNth (i-size) '-' board))
  | otherwise = []
 
 -- | Only white pawns can move 2 down and they have to jump over b or B
 move2Down :: [Char] -> Int->  Int -> [Char]
-move2Down currBoard  boardSize index
- | (currBoard!!index) == 'w' &&
-   index+(2*boardSize) < boardSize^2 &&
-   currBoard!!(index+(2*boardSize)) == '-' &&
-   (currBoard!!(index+boardSize) == 'b' ||
-   currBoard!!(index+boardSize) == 'B')
-   = replaceNth (index+(2*boardSize)) (currBoard!!index) (replaceNth index '-' (replaceNth (index+boardSize) '-' currBoard))
+move2Down board  size i
+ | (board!!i) == 'w' &&
+   i+(2*size) < size^2 &&
+   board!!(i+(2*size)) == '-' &&
+   (board!!(i+size) == 'b' || board!!(i+size) == 'B')
+   = replaceNth (i+(2*size)) (board!!i) (replaceNth i '-' (replaceNth (i+size) '-' board))
  | otherwise = []
 
+-- | Checks that range and that b is jumping or w/W or w over b/B
 move2Left :: [Char] -> Int->  Int -> [Char]
-move2Left currBoard  boardSize index
- | (currBoard!!index) == 'b' &&
-   index-2 >= 0 &&
-   (index-1) `mod` boardSize /= 0 &&
-   index `mod` boardSize /= 0 &&
-   currBoard!!(index-2) == '-' &&
-   (currBoard!!(index-1) == 'w' ||
-   currBoard!!(index-1) == 'W')
-    = replaceNth (index-2) (currBoard!!index) (replaceNth index '-' (replaceNth (index-1) '-' currBoard))
- | (currBoard!!index) == 'w' &&
-   index-2 >= 0 &&
-   (index-1) `mod` boardSize /= 0 &&
-   index `mod` boardSize /= 0 &&
-   currBoard!!(index-2) == '-' &&
-   (currBoard!!(index-1) == 'b' ||
-   currBoard!!(index-1) == 'B')
-     = replaceNth (index-2) (currBoard!!index) (replaceNth index '-' (replaceNth (index-1) '-' currBoard))
+move2Left board  size i
+ | i-2 >= 0 &&
+   (i-1) `mod` size /= 0 &&
+   i `mod` size /= 0 &&
+   board!!(i-2) == '-' &&
+   ((board!!i) == 'b' && (board!!(i-1) == 'w' || board!!(i-1) == 'W') ||
+   (board!!i) == 'w' && (board!!(i-1) == 'b' || board!!(i-1) == 'B'))
+      = replaceNth (i-2) (board!!i) (replaceNth i '-' (replaceNth (i-1) '-' board))
  | otherwise = []
 
+-- | Checks that range and that b is jumping or w/W or w over b/B
 move2Right :: [Char] -> Int->  Int -> [Char]
-move2Right currBoard boardSize index
- | (currBoard!!index) == 'b' &&
-   index+2 < boardSize^2 &&
-   (index+1) `mod` boardSize /= 0 &&
-   (index+2) `mod` boardSize /= 0 &&
-   currBoard!!(index+2) == '-' &&
-   (currBoard!!(index+1) == 'w' ||
-   currBoard!!(index+1) == 'W')
-    = replaceNth (index+2) (currBoard!!index) (replaceNth index '-' (replaceNth (index+1) '-' currBoard))
- | (currBoard!!index) == 'w' &&
-   index+2 < boardSize^2 &&
-   (index+1) `mod` boardSize /= 0 &&
-   (index+2) `mod` boardSize /= 0 &&
-   currBoard!!(index+2) == '-' &&
-   (currBoard!!(index+1) == 'b' ||
-   currBoard!!(index+1) == 'B')
-    = replaceNth (index+2) (currBoard!!index) (replaceNth index '-' (replaceNth (index+1) '-' currBoard))
+move2Right board size i
+ | i+2 < size^2 &&
+   (i+1) `mod` size /= 0 &&
+   (i+2) `mod` size /= 0 &&
+   board!!(i+2) == '-' &&
+   ((board!!i) == 'b' && (board!!(i+1) == 'w' || board!!(i+1) == 'W') ||
+   (board!!i) == 'w' && (board!!(i+1) == 'b' || board!!(i+1) == 'B'))
+      = replaceNth (i+2) (board!!i) (replaceNth i '-' (replaceNth (i+1) '-' board))
  | otherwise = []
 
 -- | Takes a list of board strings and prints out each one as a square board
@@ -169,8 +152,8 @@ printAllBoardsHelper boards print
  | otherwise = printAllBoardsHelper (tail boards) ((print ++ printBoardHelper (head boards) (boardSize (head boards)) 1 []))
 
 -- | Not used
--- | printBoard :: [Char] -> IO()
--- | printBoard board = putStr (printBoardHelper board (boardSize board) 1 [])
+printBoard :: [Char] -> IO()
+printBoard board = putStr (printBoardHelper board (boardSize board) 1 [])
 
 -- | Tail Recursive helper. Stores the output in 'print'
 -- | Breaks down a board string using board size.
@@ -180,8 +163,8 @@ printBoardHelper board bSize column print
  | column == bSize = print ++ [(head board)] ++ " " ++ "\n" ++ printBoardHelper (tail board) bSize 1 print
  | otherwise = print ++ [(head board)] ++ " " ++ (printBoardHelper (tail board) bSize (column+1) print)
 
--- | Puts 'new' into element #index
+-- | Puts 'new' into element #i
 replaceNth :: Int -> Char -> [Char] -> [Char]
-replaceNth index new (x:xs)
- | index == 0 = new:xs
- | otherwise = x:replaceNth (index-1) new xs
+replaceNth i new (x:xs)
+ | i == 0 = new:xs
+ | otherwise = x:replaceNth (i-1) new xs

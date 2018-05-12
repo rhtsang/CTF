@@ -2,7 +2,18 @@ import Data.List
 import Data.Char
 
 {-
-5x5 board numberation
+3x3
+0 1 2
+3 4 5
+6 7 8
+
+4x4
+ 0  1  2  3
+ 4  5  6  7
+ 8  9 10 11
+12 13 14 15
+
+5x5 
  0  1  2  3  4
  5  6  7  8  9
 10 11 12 13 14
@@ -35,7 +46,8 @@ boardSize board = (round (sqrt (fromIntegral (length board))))
 
 genMoves :: [Char] -> [[Char]] -> [Int]-> [[Char]] -> [[Char]]
 genMoves board history []      moves = filter (\n -> not (elem n history)) (filter (not . null) moves)
-genMoves board history indices moves = genMoves board history (tail indices) (moves++(genMovesHelper board (boardSize board) indices))
+genMoves board history indices moves = genMoves board history (tail indices)
+                                       (moves++(genMovesHelper board (boardSize board) indices))
 
 genMovesHelper :: [Char] -> Int -> [Int] -> [[Char]]
 genMovesHelper board size []          = []

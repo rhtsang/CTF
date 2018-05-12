@@ -19,15 +19,20 @@ import Data.Char
 10 11 12 13 14
 15 16 17 18 19
 20 21 22 23 24
+
+how to get all 'w's
+elemIndices 'w' "---ww---"
 -}
 
--- | Default 5x5 board
+testallw board = printAllBoards (genMoves board [] (elemIndices 'w' board) [])
 test1 = printAllBoards (genMoves "-wWw--www-------bbb--bBb-" [] [6,7] [])
 test2 = printAllBoards (genMoves "-wWw-w-ww-------bbb--bBb-" ["-wWw--www-------bbb--bBb-"] [6,7] [])
 test3 = printAllBoards (genMoves "-Ww---bB-" [] [1, 2] [])
 test4 = printAllBoards (genMoves "-W---b-Bw" [] [1, 8] [])
 test5 = map evalWhitePieces (genMoves "bW---b-Bw" [] [0, 8] [])
 test5p = printAllBoards (genMoves "bW---b-Bw" [] [0, 8] [])
+test6 = testallw "-wWw--www-------bbb--bBb-"
+test7 = testallw "--W--ww-b-b--B--"
 
 -- | Static eval of board for white by counting pieces. Kings 10, pawns 1.
 evalWhitePieces :: [Char] -> Int
@@ -65,18 +70,21 @@ genMovesHelper board size i =
     [move2Left  board size i]++
     [move2Right board size i]
 
-
+-- | white pawns cant go up
 move1Up :: [Char] -> Int->  Int -> [Char]
 move1Up board size i
  | i-size >= 0 &&
-   board!!(i-size) == '-'
+   board!!(i-size) == '-' &&
+   board!!i /= 'w'
     = replaceNth i '-' (replaceNth (i-size) (board!!i) board)
  | otherwise = []
 
+-- | black pawns cant go down
 move1Down :: [Char] -> Int->  Int -> [Char]
 move1Down board size i
  | i+size < size^2 &&
-   board!!(i+size) == '-'
+   board!!(i+size) == '-' &&
+   board!!i /= 'b'
     = replaceNth i '-' (replaceNth (i+size) (board!!i) board)
  | otherwise = []
 

@@ -1,6 +1,34 @@
 import Data.List
 import Data.Char
 
+{-
+5x5 board numberation
+ 0  1  2  3  4
+ 5  6  7  8  9
+10 11 12 13 14
+15 16 17 18 19
+20 21 22 23 24
+-}
+
+-- | Default 5x5 board
+test1 = printAllBoards (genMoves "-wWw--www-------bbb--bBb-" [] [6,7] [])
+test2 = printAllBoards (genMoves "-wWw-w-ww-------bbb--bBb-" ["-wWw--www-------bbb--bBb-"] [6,7] [])
+test3 = printAllBoards (genMoves "-Ww---bB-" [] [2] [])
+
+-- | Static eval of board for white by counting pieces. Kings 10, pawns 1.
+evalWhitePieces :: [Char] -> Int
+evalWhitePieces [] = 0
+evalWhitePieces (x:xs)
+  | x == 'w'  = 1 + evalWhitePieces xs
+  | x == 'b'  = -1 + evalWhitePieces xs
+  | x == 'W'  = 10 + evalWhitePieces xs
+  | x == 'B'  = -10 + evalWhitePieces xs
+  | otherwise = evalWhitePieces xs
+
+-- | Counts the number occurances of x in list
+countOccurance :: Char -> [Char] -> Int
+countOccurance x list = (length . filter (==x)) list
+
 boardSize board = (round (sqrt (fromIntegral (length board))))
 
 genMoves :: [Char] -> [[Char]] -> [Int]-> [[Char]] -> [[Char]]

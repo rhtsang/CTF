@@ -34,6 +34,11 @@ test5p = printAllBoards (genMoves "bW---b-Bw" [] [0, 8] [])
 test6 = testallw "-wWw--www-------bbb--bBb-"
 test7 = testallw "--W--ww-b-b--B--"
 
+evalBoard :: [Char] -> [[Char]] -> Char -> Int
+evalBoard board history turn
+ | turn == 'w' = (evalWhitePieces board) + (pawnToFlag (elemIndices 'w' board) (elemIndices 'B' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'w' board) [])) + (flagToEnemy 'W' board)
+ | otherwise = -1*(evalWhitePieces board) + (pawnToFlag (elemIndices 'b' board) (elemIndices 'W' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'b' board) [])) + (flagToEnemy 'B' board)
+
 -- | Static eval of board for white by counting pieces. Kings 10, pawns 1.
 evalWhitePieces :: [Char] -> Int
 evalWhitePieces [] = 0
@@ -48,10 +53,11 @@ evalWhitePieces (x:xs)
 -- uses Manhattan distance to calculate this value
 -- first call should use minDistance = 9999 or some other really high value
 -- end result is negated so that a higher distance will result in a lower evaluation
-pawnToFlag :: [Int] -> Int -> Int -> Int -> Int -> Int
-pawnToFlag [] flagRow flagCol boardSize minDistance = -1*minDistance
-pawnToFlag (i:indices) flagRow flagCol boardSize minDistance
- = pawnToFlag indices flagRow flagCol boardSize (min minDistance ((abs((div i boardSize)-flagRow)) + abs((mod i boardSize)-flagCol)))
+pawnToFlag :: [Int] -> [Int] -> Int -> Int -> Int
+pawnToFlag [] flagInds boardSize minDistance = -1*minDistance
+pawnToFlag (i:indices) flagInds boardSize minDistance
+ | flagInds == [] = minDistance
+ | otherwise = pawnToFlag indices flagInds boardSize (min minDistance ((abs((div i boardSize)-(div (head flagInds) boardSize))) + abs((mod i boardSize)-(mod (head flagInds) boardSize))))
 
 -- distance from flag to enemy side; simple y-axis calculation
 -- similar to pawnToFlag above

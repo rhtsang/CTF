@@ -46,12 +46,15 @@ evalWhitePieces (x:xs)
 
 -- smallest distance between pawn and enemy flag; lower distance => higher board evaluation value
 -- uses Manhattan distance to calculate this value
+-- first call should use minDistance = 9999 or some other really high value
+-- end result is negated so that a higher distance will result in a lower evaluation
 pawnToFlag :: [Int] -> Int -> Int -> Int -> Int -> Int
 pawnToFlag [] flagRow flagCol boardSize minDistance = -1*minDistance
 pawnToFlag (i:indices) flagRow flagCol boardSize minDistance
  = pawnToFlag indices flagRow flagCol boardSize (min minDistance ((abs((div i boardSize)-flagRow)) + abs((mod i boardSize)-flagCol)))
 
 -- distance from flag to enemy side; simple y-axis calculation
+-- similar to pawnToFlag above
 flagToEnemy ::  Char -> [Char] -> Int
 flagToEnemy flag board
  | flag == 'B' = -1*(div (head (elemIndices flag board)) (boardSize board))

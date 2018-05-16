@@ -38,11 +38,24 @@ test7 = testallw "--W--ww-b-b--B--"
 evalWhitePieces :: [Char] -> Int
 evalWhitePieces [] = 0
 evalWhitePieces (x:xs)
-  | x == 'w'  = 1 + evalWhitePieces xs
-  | x == 'b'  = -1 + evalWhitePieces xs
-  | x == 'W'  = 10 + evalWhitePieces xs
-  | x == 'B'  = -10 + evalWhitePieces xs
-  | otherwise = evalWhitePieces xs
+ | x == 'w'  = 1 + evalWhitePieces xs
+ | x == 'b'  = -1 + evalWhitePieces xs
+ | x == 'W'  = 10 + evalWhitePieces xs
+ | x == 'B'  = -10 + evalWhitePieces xs
+ | otherwise = evalWhitePieces xs
+
+-- smallest distance between pawn and enemy flag; lower distance => higher board evaluation value
+-- uses Manhattan distance to calculate this value
+pawnToFlag :: [Int] -> Int -> Int -> Int -> Int -> Int
+pawnToFlag [] flagRow flagCol boardSize minDistance = -1*minDistance
+pawnToFlag (i:indices) flagRow flagCol boardSize minDistance
+ = pawnToFlag indices flagRow flagCol boardSize (min minDistance ((abs((div i boardSize)-flagRow)) + abs((mod i boardSize)-flagCol)))
+
+-- distance from flag to enemy side; simple y-axis calculation
+flagToEnemy ::  Char -> [Char] -> Int
+flagToEnemy flag board
+ | flag == 'B' = -1*(div (head (elemIndices flag board)) (boardSize board))
+ | otherwise = -1*((boardSize board) - (head (elemIndices flag board)))
 
 -- | Counts the number occurances of x in list
 countOccurance :: Char -> [Char] -> Int

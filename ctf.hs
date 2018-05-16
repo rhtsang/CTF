@@ -34,6 +34,10 @@ test5p = printAllBoards (genMoves "bW---b-Bw" [] [0, 8] [])
 test6 = testallw "-wWw--www-------bbb--bBb-"
 test7 = testallw "--W--ww-b-b--B--"
 
+evalAll :: [[Char]] -> [[Char]] -> Char -> [Int]
+evalAll [] _ _ = []
+evalAll boards history turn = (evalBoard (head boards) history turn):(evalAll (tail boards) history turn)
+
 evalBoard :: [Char] -> [[Char]] -> Char -> Int
 evalBoard board history turn
  | turn == 'w' = (evalWhitePieces board) + (pawnToFlag (elemIndices 'w' board) (elemIndices 'B' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'w' board) [])) + (flagToEnemy 'W' board)

@@ -35,27 +35,30 @@ test6 = testallw "-wWw--www-------bbb--bBb-"
 test7 = testallw "--W--ww-b-b--B--"
 test8 = genMoves "---bW--Bw" [] ((elemIndices 'b' "---bW--Bw")++(elemIndices 'B' "---bW--Bw")) []
 
+
+
 -- need to rethink error checking for empty lists: currently does like 2x redundant computations
 -- boards: list of boards at current level (min/max)
 -- depth: depth of minimax algorithm to go to
 minimax :: [[Char]] -> [[Char]] -> Char -> Int -> Int -> [Int]
-minimax boards history 'w' level depth
- | boards == [] = []
+
+minimax [] _ _ _ _ = []
+
+minimax (b:boards) history 'w' level depth
 -- error check
- | (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w') == [] = [-99999]
- | depth == 1 && level == 1 = [maximum (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w')]++(minimax (tail boards) history 'w' level depth)
+ | (evalAll (genMoves b history (getWhiteIndices b) []) history 'w') == [] = [-99999]
+ | depth == 1 && level == 1 = [maximum (evalAll (genMoves b history ((elemIndices 'w' b)++(elemIndices 'W' b)) []) history 'w')]++(minimax boards history 'w' level depth)
 -- error check
- | (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w') == [] = [99999]
- | depth == 1 && level == 0 = [minimum (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w')]++(minimax (tail boards) history 'b' level depth)
+ | (evalAll (genMoves b history (getBlackIndices b) []) history 'w') == [] = [99999]
+ | depth == 1 && level == 0 = [minimum (evalAll (genMoves b history ((elemIndices 'b' b)++(elemIndices 'B' b)) []) history 'w')]++(minimax boards history 'b' level depth)
 --error check
- | (minimax (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'b' (mod (level+1) 2) (depth-1)) == [] = [-99999]
- | level == 1 = [maximum (minimax (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'b' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'w' level depth)
+ | (minimax (genMoves b history (getWhiteIndices b) []) history 'b' (mod (level+1) 2) (depth-1)) == [] = [-99999]
+ | level == 1 = [maximum (minimax (genMoves b history (getWhiteIndices b) []) history 'b' (mod (level+1) 2) (depth-1))]++(minimax boards history 'w' level depth)
 -- error check
- | (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1)) == [] = [99999]
- | level == 0 = [minimum (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'b' level depth)
+ | (minimax (genMoves b history (getBlackIndices b) []) history 'w' (mod (level+1) 2) (depth-1)) == [] = [99999]
+ | level == 0 = [minimum (minimax (genMoves b history (getBlackIndices b) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax boards history 'b' level depth)
 
 minimax boards history 'b' level depth
- | boards == [] = []
 -- error check
  | (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'b') == [] = [-99999]
  | depth == 1 && level == 1 = [maximum (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'b')]++(minimax (tail boards) history 'b' level depth)
@@ -74,7 +77,7 @@ minimax boards history _ level depth = []
 
 evalAll :: [[Char]] -> [[Char]] -> Char -> [Int]
 evalAll [] _ _ = []
-evalAll boards history turn = (evalBoard (head boards) history turn):(evalAll (tail boards) history turn)
+evalAll (b:boards) history turn = (evalBoard b history turn):(evalAll boards history turn)
 
 evalBoard :: [Char] -> [[Char]] -> Char -> Int
 evalBoard board history turn

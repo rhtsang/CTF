@@ -81,13 +81,13 @@ evalBoard board history turn
  | turn == 'w' = (evalWhitePieces board){- + (pawnToFlag (elemIndices 'w' board) (elemIndices 'B' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'w' board) [])) + (flagToEnemy 'W' board)-}
  | otherwise = -1*(evalWhitePieces board){- + (pawnToFlag (elemIndices 'b' board) (elemIndices 'W' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'b' board) [])) + (flagToEnemy 'B' board)-}
 
- -- | Takes a board and returns a list all indices of white pieces
- getWhiteIndices :: [Char] -> [Int]
- getWhiteIndices board = (elemIndices 'w' board) ++ (elemIndices 'W' board)
+-- | Takes a board and returns a list all indices of black pieces
+getWhiteIndices :: [Char] -> [Int]
+getWhiteIndices board = (elemIndices 'w' board) ++ (elemIndices 'W' board)
 
- -- | Takes a board and returns a list all indices of black pieces
- getBlackIndices :: [Char] -> [Int]
- getBlackIndices board = (elemIndices 'b' board) ++ (elemIndices 'B' board)
+-- | Takes a board and returns a list all indices of black pieces
+getBlackIndices :: [Char] -> [Int]
+getBlackIndices board = (elemIndices 'b' board) ++ (elemIndices 'B' board)
 
 -- | Static eval of board for white by counting pieces. Kings 10, pawns 1.
 -- | Input: single board string, Output: Points+

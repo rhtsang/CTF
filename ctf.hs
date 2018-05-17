@@ -35,28 +35,39 @@ test6 = testallw "-wWw--www-------bbb--bBb-"
 test7 = testallw "--W--ww-b-b--B--"
 test8 = genMoves "---bW--Bw" [] ((elemIndices 'b' "---bW--Bw")++(elemIndices 'B' "---bW--Bw")) []
 
+-- need to rethink error checking for empty lists: currently does like 2x redundant computations
+-- boards: list of boards at current level (min/max)
+-- depth: depth of minimax algorithm to go to
 minimax :: [[Char]] -> [[Char]] -> Char -> Int -> Int -> [Int]
---minimax [] history turn level depth = []
 minimax boards history 'w' level depth
  | boards == [] = []
+-- error check 
+ | (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w') == [] = [-99999]
  | depth == 1 && level == 1 = [maximum (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w')]++(minimax (tail boards) history 'w' level depth)
+-- error check
+ | (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w') == [] = [99999]
  | depth == 1 && level == 0 = [minimum (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w')]++(minimax (tail boards) history 'b' level depth)
+--error check
+ | (minimax (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'b' (mod (level+1) 2) (depth-1)) == [] = [-99999]
  | level == 1 = [maximum (minimax (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'b' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'w' level depth)
+-- error check
+ | (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1)) == [] = [99999]
  | level == 0 = [minimum (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'b' level depth)
 
-{-minimax boards history 'b' level depth
- | boards == [] = []
- | depth == 1 && level == 1 = [maximum (evalAll (genMoves (head boards) history (elemIndices 'b' (head boards)) []) history 'b')]
- | depth == 1 && level == 0 = [minimum (evalAll (genMoves (head boards) history (elemIndices 'w' (head boards)) []) history 'w')]
- | level == 1  = [maximum ((minimax (genMoves (head boards) history (elemIndices 'b' (head boards)) []) history 'w' (mod (level+1) 2) (depth-1))++(minimax (tail boards) history 'b' level depth))]
- | level == 0 = [minimum ((minimax (genMoves (head boards) history (elemIndices 'w' (head boards)) []) history 'b' (mod (level+1) 2) (depth-1))++(minimax (tail boards) history 'w' level depth))]
--}
 minimax boards history 'b' level depth
  | boards == [] = []
+-- error check
+ | (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'b') == [] = [-99999]
  | depth == 1 && level == 1 = [maximum (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'b')]++(minimax (tail boards) history 'b' level depth)
+-- error check
+ | (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w') == [] = [99999]
  | depth == 1 && level == 0 = [minimum (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w')]++(minimax (tail boards) history 'w' level depth)
+-- error check
+ | (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1)) == [] = [-99999]
  | level == 1 = [maximum (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'b' level depth)
- | level == 0 = [minimum (minimax (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'b' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'w' level depth)
+-- error check
+ | (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1)) == [] = [99999]
+ | level == 0 = [minimum (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'w' level depth)
 
 minimax boards history _ level depth = []
 
@@ -87,6 +98,7 @@ evalWhitePieces (x:xs)
 pawnToFlag :: [Int] -> [Int] -> Int -> Int -> Int
 pawnToFlag [] flagInds boardSize minDistance = -1*minDistance
 pawnToFlag (i:indices) flagInds boardSize minDistance
+ | flagInds == [] = 99999
  | flagInds == [] = minDistance
  | otherwise = pawnToFlag indices flagInds boardSize (min minDistance ((abs((div i boardSize)-(div (head flagInds) boardSize))) + abs((mod i boardSize)-(mod (head flagInds) boardSize))))
 
@@ -94,6 +106,7 @@ pawnToFlag (i:indices) flagInds boardSize minDistance
 -- similar to pawnToFlag above
 flagToEnemy ::  Char -> [Char] -> Int
 flagToEnemy flag board
+ | (elemIndices flag board) == [] = -99999
  | flag == 'B' = -1*(div (head (elemIndices flag board)) (boardSize board))
  | otherwise = -1*((boardSize board) - (head (elemIndices flag board)))
 

@@ -41,7 +41,7 @@ test8 = genMoves "---bW--Bw" [] ((elemIndices 'b' "---bW--Bw")++(elemIndices 'B'
 minimax :: [[Char]] -> [[Char]] -> Char -> Int -> Int -> [Int]
 minimax boards history 'w' level depth
  | boards == [] = []
--- error check 
+-- error check
  | (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w') == [] = [-99999]
  | depth == 1 && level == 1 = [maximum (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w')]++(minimax (tail boards) history 'w' level depth)
 -- error check
@@ -81,7 +81,16 @@ evalBoard board history turn
  | turn == 'w' = (evalWhitePieces board){- + (pawnToFlag (elemIndices 'w' board) (elemIndices 'B' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'w' board) [])) + (flagToEnemy 'W' board)-}
  | otherwise = -1*(evalWhitePieces board){- + (pawnToFlag (elemIndices 'b' board) (elemIndices 'W' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'b' board) [])) + (flagToEnemy 'B' board)-}
 
+ -- | Takes a board and returns a list all indices of white pieces
+ getWhiteIndices :: [Char] -> [Int]
+ getWhiteIndices board = (elemIndices 'w' board) ++ (elemIndices 'W' board)
+
+ -- | Takes a board and returns a list all indices of black pieces
+ getBlackIndices :: [Char] -> [Int]
+ getBlackIndices board = (elemIndices 'b' board) ++ (elemIndices 'B' board)
+
 -- | Static eval of board for white by counting pieces. Kings 10, pawns 1.
+-- | Input: single board string, Output: Points+
 evalWhitePieces :: [Char] -> Int
 evalWhitePieces [] = 0
 evalWhitePieces (x:xs)
@@ -90,6 +99,11 @@ evalWhitePieces (x:xs)
  | x == 'W'  = 10 + evalWhitePieces xs
  | x == 'B'  = -10 + evalWhitePieces xs
  | otherwise = evalWhitePieces xs
+
+-- | Static eval of board for black by counting pieces. Kings 10, pawns 1.
+-- | Input: single board string, Output: Points
+evalBlackPieces :: [Char] -> Int
+evalBlackPieces b = -1 * (evalWhitePieces b)
 
 -- smallest distance between pawn and enemy flag; lower distance => higher board evaluation value
 -- uses Manhattan distance to calculate this value

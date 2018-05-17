@@ -33,6 +33,33 @@ test5 = map evalWhitePieces (genMoves "bW---b-Bw" [] [0, 8] [])
 test5p = printAllBoards (genMoves "bW---b-Bw" [] [0, 8] [])
 test6 = testallw "-wWw--www-------bbb--bBb-"
 test7 = testallw "--W--ww-b-b--B--"
+test8 = genMoves "---bW--Bw" [] ((elemIndices 'b' "---bW--Bw")++(elemIndices 'B' "---bW--Bw")) []
+
+minimax :: [[Char]] -> [[Char]] -> Char -> Int -> Int -> [Int]
+--minimax [] history turn level depth = []
+minimax boards history 'w' level depth
+ | boards == [] = []
+ | depth == 1 && level == 1 = [maximum (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w')]++(minimax (tail boards) history 'w' level depth)
+ | depth == 1 && level == 0 = [minimum (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w')]++(minimax (tail boards) history 'b' level depth)
+ | level == 1 = [maximum (minimax (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'b' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'w' level depth)
+ | level == 0 = [minimum (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'b' level depth)
+
+{-minimax boards history 'b' level depth
+ | boards == [] = []
+ | depth == 1 && level == 1 = [maximum (evalAll (genMoves (head boards) history (elemIndices 'b' (head boards)) []) history 'b')]
+ | depth == 1 && level == 0 = [minimum (evalAll (genMoves (head boards) history (elemIndices 'w' (head boards)) []) history 'w')]
+ | level == 1  = [maximum ((minimax (genMoves (head boards) history (elemIndices 'b' (head boards)) []) history 'w' (mod (level+1) 2) (depth-1))++(minimax (tail boards) history 'b' level depth))]
+ | level == 0 = [minimum ((minimax (genMoves (head boards) history (elemIndices 'w' (head boards)) []) history 'b' (mod (level+1) 2) (depth-1))++(minimax (tail boards) history 'w' level depth))]
+-}
+minimax boards history 'b' level depth
+ | boards == [] = []
+ | depth == 1 && level == 1 = [maximum (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'b')]++(minimax (tail boards) history 'b' level depth)
+ | depth == 1 && level == 0 = [minimum (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w')]++(minimax (tail boards) history 'w' level depth)
+ | level == 1 = [maximum (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'b' level depth)
+ | level == 0 = [minimum (minimax (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'b' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'w' level depth)
+
+minimax boards history _ level depth = []
+
 
 evalAll :: [[Char]] -> [[Char]] -> Char -> [Int]
 evalAll [] _ _ = []
@@ -40,8 +67,8 @@ evalAll boards history turn = (evalBoard (head boards) history turn):(evalAll (t
 
 evalBoard :: [Char] -> [[Char]] -> Char -> Int
 evalBoard board history turn
- | turn == 'w' = (evalWhitePieces board) + (pawnToFlag (elemIndices 'w' board) (elemIndices 'B' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'w' board) [])) + (flagToEnemy 'W' board)
- | otherwise = -1*(evalWhitePieces board) + (pawnToFlag (elemIndices 'b' board) (elemIndices 'W' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'b' board) [])) + (flagToEnemy 'B' board)
+ | turn == 'w' = (evalWhitePieces board){- + (pawnToFlag (elemIndices 'w' board) (elemIndices 'B' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'w' board) [])) + (flagToEnemy 'W' board)-}
+ | otherwise = -1*(evalWhitePieces board){- + (pawnToFlag (elemIndices 'b' board) (elemIndices 'W' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'b' board) [])) + (flagToEnemy 'B' board)-}
 
 -- | Static eval of board for white by counting pieces. Kings 10, pawns 1.
 evalWhitePieces :: [Char] -> Int

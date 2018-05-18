@@ -29,146 +29,73 @@ test1 = printAllBoards (genMoves "-wWw--www-------bbb--bBb-" [] [6,7] [])
 test2 = printAllBoards (genMoves "-wWw-w-ww-------bbb--bBb-" ["-wWw--www-------bbb--bBb-"] [6,7] [])
 test3 = printAllBoards (genMoves "-Ww---bB-" [] [1, 2] [])
 test4 = printAllBoards (genMoves "-W---b-Bw" [] [1, 8] [])
-test5 = map evalWhitePieces (genMoves "bW---b-Bw" [] [0, 8] [])
 test5p = printAllBoards (genMoves "bW---b-Bw" [] [0, 8] [])
 test6 = testallw "-wWw--www-------bbb--bBb-"
 test7 = testallw "--W--ww-b-b--B--"
 test8 = genMoves "---bW--Bw" [] ((elemIndices 'b' "---bW--Bw")++(elemIndices 'B' "---bW--Bw")) []
-test9 = nextmove "---wW--Bw" [] 'w' 1
-test9a = (genMoves "---wW--Bw" [] (getWhiteIndices "---wW--Bw") [])
-test10 = eval ["----W-wBw","---wW-w--","-W-w---Bw","---w-W-Bw"] ["---wW--Bw"] 'w' 1
+test9a = (genMoves "---wW--Bw" [] (getIndices 'w' "---wW--Bw") [])
+test10 = eval ["----WwwB-"] 'w' 1
+test10a = map (evalhelp 'b' (1-1)  []) (genMoves "----WwwB-" [] (getIndices 'w' "----WwwB-") [])
+test11 = map (evalhelp (other 'b') (1-1) []) (genMoves "-Www--bBb" ["wWw---bBb"] (getIndices ('b') "-Www--bBb") [])
+test11a = genMoves "-Www--bBb" ["wWw---bBb"] (getIndices ('b') "-Www--bBb") []
 
 -- | gets index of max element of list
 maxi xs = snd . head . reverse . sort $ zip xs [0..]
 
--- | b is board, h is histroy, d is depth
-nextmove b h 'w' 1 = (genMoves b h (getWhiteIndices b) [])!!(maxi $ map evalWhitePieces (genMoves b h (getWhiteIndices b) []))
--- nextmove b h 'b' 1 = (genMoves b h (getBlackIndices b) [])!!(maxi $ map evalBlackPieces (genMoves b h (getBlackIndices b) []))
+-- | gets index of min element of list
+mini xs = snd . head . sort $ zip xs [0..]
 
-eval [] _ _ _ = []
-eval (b:boards) h c 1 = (staticeval [b] c):(eval boards h c 1)
+-- | b - board, c - 'w' or 'd', d - depth, m - level ( 1 for max, 0 for min )
+-- eval [] _ _ = 0
+-- eval (b:boards) h c 1 = (staticeval ([b]++h) c):(eval boards h c 1)
+eval (b:history) p d 
+ | p == 'w' = (genMoves b history (getIndices p b) [])!!(maxi $ map (evalhelp (other p) (d-1) history) (genMoves b history (getIndices p b) []))
+ | p == 'b' = (genMoves b history (getIndices p b) [])!!(mini $ map (evalhelp (other p) (d-1) history) (genMoves b history (getIndices p b) []))
+
+-- | evals subroutine. 
+-- | intput: player depth history board
+-- | returns the minimax eval of the given board for other params
+evalhelp p 0 h b = staticeval (b:h) p
+evalhelp p d h b
+-- max level. White trys to get maximum score always 
+ | p == 'w' = maximum $ map (evalhelp (other p) (d-1) (h++[b])) (genMoves b (h++[b]) (getIndices (p) b) [])
+-- min level. Black trys to get minimal score always
+ | p == 'b' = minimum $ map (evalhelp (other p) (d-1) (h++[b])) (genMoves b (h++[b]) (getIndices (p) b) [])
+
+other :: Char -> Char
+other 'w' = 'b'
+other 'b' = 'w'
 
 staticeval :: [[Char]] -> Char -> Int
 staticeval (b:history) c = (evalPieces b) + (evalMoves (b:history) c)
 
--- | Static eval of board for white by counting pieces. Kings 100000, pawns 1.
+-- | Static eval of board by counting pieces. Kings 100000, pawns 1.
 -- | Input: single board string, Output: Points+
 evalPieces :: [Char] -> Int
 evalPieces [] = 0
 evalPieces (x:xs)
- | x == 'w'  = 1 + evalPieces xs
- | x == 'b'  = -1 + evalPieces xs
- | x == 'W'  = 100000 + evalPieces xs
- | x == 'B'  = -100000 + evalPieces xs
+ | x == 'w'  = evalPieces xs + 1
+ | x == 'b'  = evalPieces xs - 1
+ | x == 'W'  = evalPieces xs + 100000
+ | x == 'B'  = evalPieces xs - 100000
  | otherwise = evalPieces xs
 
--- | evaluate the move advantage for 'w' or 'b'
+-- | Static eval of board by counting possible moves
 -- | if its white turn and there are no white moves white loses. same for black
 evalMoves :: [[Char]] -> Char -> Int
 evalMoves [] _ = 0
-evalMoves (b:history) 'w'
- | (length (genMoves b history (getWhiteIndices b) [])) == 0 = -100000
- | (length (genMoves b history (getBlackIndices b) [])) == 0 = 100000
- | otherwise = (length (genMoves b history (getWhiteIndices b) [])) - (length (genMoves b history (getBlackIndices b) []))
+evalMoves (b:history) p
+ | (length (genMoves b history (getIndices p b) [])) == 0 = -100000
+ | (length (genMoves b history (getIndices (other p) b) [])) == 0 = 100000
+ | otherwise = 0
+-- | otherwise = (length (genMoves b history (getWhiteIndices b) [])) - (length (genMoves b history (getBlackIndices b) []))
 
-evalMoves (b:history) 'b'
- | (length (genMoves b history (getBlackIndices b) [])) == 0 = 100000
- | (length (genMoves b history (getWhiteIndices b) [])) == 0 = -100000
- | otherwise = (length (genMoves b history (getWhiteIndices b) [])) - (length (genMoves b history (getBlackIndices b) []))
+-- | input: player, board
+-- | output: list of indices of the players pieces
+getIndices :: Char -> [Char] -> [Int]
+getIndices 'w' board = (elemIndices 'w' board) ++ (elemIndices 'W' board)
+getIndices 'b' board = (elemIndices 'b' board) ++ (elemIndices 'B' board)
 
--- need to rethink error checking for empty lists: currently does like 2x redundant computations
--- boards: list of boards at current level (min/max)
--- depth: depth of minimax algorithm to go to
-minimax :: [[Char]] -> [[Char]] -> Char -> Int -> Int -> [Int]
-
-minimax [] _ _ _ _ = []
-
-minimax (b:boards) history 'w' level depth
--- error check
- | (evalAll (genMoves b history (getWhiteIndices b) []) history 'w') == [] = [-99999]
- | depth == 1 && level == 1 = [maximum (evalAll (genMoves b history ((elemIndices 'w' b)++(elemIndices 'W' b)) []) history 'w')]++(minimax boards history 'w' level depth)
--- error check
- | (evalAll (genMoves b history (getBlackIndices b) []) history 'w') == [] = [99999]
- | depth == 1 && level == 0 = [minimum (evalAll (genMoves b history ((elemIndices 'b' b)++(elemIndices 'B' b)) []) history 'w')]++(minimax boards history 'b' level depth)
---error check
- | (minimax (genMoves b history (getWhiteIndices b) []) history 'b' (mod (level+1) 2) (depth-1)) == [] = [-99999]
- | level == 1 = [maximum (minimax (genMoves b history (getWhiteIndices b) []) history 'b' (mod (level+1) 2) (depth-1))]++(minimax boards history 'w' level depth)
--- error check
- | (minimax (genMoves b history (getBlackIndices b) []) history 'w' (mod (level+1) 2) (depth-1)) == [] = [99999]
- | level == 0 = [minimum (minimax (genMoves b history (getBlackIndices b) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax boards history 'b' level depth)
-
-minimax boards history 'b' level depth
--- error check
- | (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'b') == [] = [-99999]
- | depth == 1 && level == 1 = [maximum (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'b')]++(minimax (tail boards) history 'b' level depth)
--- error check
- | (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w') == [] = [99999]
- | depth == 1 && level == 0 = [minimum (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w')]++(minimax (tail boards) history 'w' level depth)
--- error check
- | (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1)) == [] = [-99999]
- | level == 1 = [maximum (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'b' level depth)
--- error check
- | (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1)) == [] = [99999]
- | level == 0 = [minimum (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'w' level depth)
-
-minimax boards history _ level depth = []
-
-
-evalAll :: [[Char]] -> [[Char]] -> Char -> [Int]
-evalAll [] _ _ = []
-evalAll (b:boards) history turn = (evalBoard b history turn):(evalAll boards history turn)
-
-evalBoard :: [Char] -> [[Char]] -> Char -> Int
-evalBoard board history turn
- | turn == 'w' = (evalWhitePieces board){- + (pawnToFlag (elemIndices 'w' board) (elemIndices 'B' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'w' board) [])) + (flagToEnemy 'W' board)-}
- | otherwise = -1*(evalWhitePieces board){- + (pawnToFlag (elemIndices 'b' board) (elemIndices 'W' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'b' board) [])) + (flagToEnemy 'B' board)-}
-
--- | Takes a board and returns a list all indices of black pieces
-getWhiteIndices :: [Char] -> [Int]
-getWhiteIndices board = (elemIndices 'w' board) ++ (elemIndices 'W' board)
-
--- | Takes a board and returns a list all indices of black pieces
-getBlackIndices :: [Char] -> [Int]
-getBlackIndices board = (elemIndices 'b' board) ++ (elemIndices 'B' board)
-
--- | Static eval of board for white by counting pieces. Kings 10, pawns 1.
--- | Input: single board string, Output: Points+
-evalWhitePieces :: [Char] -> Int
-evalWhitePieces [] = 0
-evalWhitePieces (x:xs)
- | x == 'w'  = 1 + evalWhitePieces xs
- | x == 'b'  = -1 + evalWhitePieces xs
- | x == 'W'  = 10 + evalWhitePieces xs
- | x == 'B'  = -10 + evalWhitePieces xs
- | otherwise = evalWhitePieces xs
-
--- | Static eval of board for black by counting pieces. Kings 10, pawns 1.
--- | Input: single board string, Output: Points
-evalBlackPieces :: [Char] -> Int
-evalBlackPieces b = -1 * (evalWhitePieces b)
-
--- smallest distance between pawn and enemy flag; lower distance => higher board evaluation value
--- uses Manhattan distance to calculate this value
--- first call should use minDistance = 9999 or some other really high value
--- end result is negated so that a higher distance will result in a lower evaluation
-pawnToFlag :: [Int] -> [Int] -> Int -> Int -> Int
-pawnToFlag [] flagInds boardSize minDistance = -1*minDistance
-pawnToFlag (i:indices) flagInds boardSize minDistance
- | flagInds == [] = 99999
- | flagInds == [] = minDistance
- | otherwise = pawnToFlag indices flagInds boardSize (min minDistance ((abs((div i boardSize)-(div (head flagInds) boardSize))) + abs((mod i boardSize)-(mod (head flagInds) boardSize))))
-
--- distance from flag to enemy side; simple y-axis calculation
--- similar to pawnToFlag above
-flagToEnemy ::  Char -> [Char] -> Int
-flagToEnemy flag board
- | (elemIndices flag board) == [] = -99999
- | flag == 'B' = -1*(div (head (elemIndices flag board)) (boardSize board))
- | otherwise = -1*((boardSize board) - (head (elemIndices flag board)))
-
--- | Counts the number occurances of x in list
-countOccurance :: Char -> [Char] -> Int
-countOccurance x list = (length . filter (==x)) list
 
 -- | Calculates the dimension of the board
 boardSize board = (round (sqrt (fromIntegral (length board))))
@@ -298,3 +225,100 @@ replaceNth :: Int -> Char -> [Char] -> [Char]
 replaceNth i new (x:xs)
  | i == 0 = new:xs
  | otherwise = x:replaceNth (i-1) new xs
+
+
+{-
+-- need to rethink error checking for empty lists: currently does like 2x redundant computations
+-- boards: list of boards at current level (min/max)
+-- depth: depth of minimax algorithm to go to
+minimax :: [[Char]] -> [[Char]] -> Char -> Int -> Int -> [Int]
+
+minimax [] _ _ _ _ = []
+
+minimax (b:boards) history 'w' level depth
+-- error check
+ | (evalAll (genMoves b history (getWhiteIndices b) []) history 'w') == [] = [-99999]
+ | depth == 1 && level == 1 = [maximum (evalAll (genMoves b history ((elemIndices 'w' b)++(elemIndices 'W' b)) []) history 'w')]++(minimax boards history 'w' level depth)
+-- error check
+ | (evalAll (genMoves b history (getBlackIndices b) []) history 'w') == [] = [99999]
+ | depth == 1 && level == 0 = [minimum (evalAll (genMoves b history ((elemIndices 'b' b)++(elemIndices 'B' b)) []) history 'w')]++(minimax boards history 'b' level depth)
+--error check
+ | (minimax (genMoves b history (getWhiteIndices b) []) history 'b' (mod (level+1) 2) (depth-1)) == [] = [-99999]
+ | level == 1 = [maximum (minimax (genMoves b history (getWhiteIndices b) []) history 'b' (mod (level+1) 2) (depth-1))]++(minimax boards history 'w' level depth)
+-- error check
+ | (minimax (genMoves b history (getBlackIndices b) []) history 'w' (mod (level+1) 2) (depth-1)) == [] = [99999]
+ | level == 0 = [minimum (minimax (genMoves b history (getBlackIndices b) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax boards history 'b' level depth)
+
+minimax boards history 'b' level depth
+-- error check
+ | (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'b') == [] = [-99999]
+ | depth == 1 && level == 1 = [maximum (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'b')]++(minimax (tail boards) history 'b' level depth)
+-- error check
+ | (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w') == [] = [99999]
+ | depth == 1 && level == 0 = [minimum (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w')]++(minimax (tail boards) history 'w' level depth)
+-- error check
+ | (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1)) == [] = [-99999]
+ | level == 1 = [maximum (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'b' level depth)
+-- error check
+ | (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1)) == [] = [99999]
+ | level == 0 = [minimum (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'w' level depth)
+
+minimax boards history _ level depth = []
+
+
+evalAll :: [[Char]] -> [[Char]] -> Char -> [Int]
+evalAll [] _ _ = []
+evalAll (b:boards) history turn = (evalBoard b history turn):(evalAll boards history turn)
+
+evalBoard :: [Char] -> [[Char]] -> Char -> Int
+evalBoard board history turn
+ | turn == 'w' = (evalWhitePieces board){- + (pawnToFlag (elemIndices 'w' board) (elemIndices 'B' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'w' board) [])) + (flagToEnemy 'W' board)-}
+ | otherwise = -1*(evalWhitePieces board){- + (pawnToFlag (elemIndices 'b' board) (elemIndices 'W' board) (boardSize board) 99999) + (length (genMoves board history (elemIndices 'b' board) [])) + (flagToEnemy 'B' board)-}
+
+-- | Takes a board and returns a list all indices of black pieces
+getWhiteIndices :: [Char] -> [Int]
+getWhiteIndices board = (elemIndices 'w' board) ++ (elemIndices 'W' board)
+
+-- | Takes a board and returns a list all indices of black pieces
+getBlackIndices :: [Char] -> [Int]
+getBlackIndices board = (elemIndices 'b' board) ++ (elemIndices 'B' board)
+
+-- | Static eval of board for white by counting pieces. Kings 10, pawns 1.
+-- | Input: single board string, Output: Points+
+evalWhitePieces :: [Char] -> Int
+evalWhitePieces [] = 0
+evalWhitePieces (x:xs)
+ | x == 'w'  = 1 + evalWhitePieces xs
+ | x == 'b'  = -1 + evalWhitePieces xs
+ | x == 'W'  = 10 + evalWhitePieces xs
+ | x == 'B'  = -10 + evalWhitePieces xs
+ | otherwise = evalWhitePieces xs
+
+-- | Static eval of board for black by counting pieces. Kings 10, pawns 1.
+-- | Input: single board string, Output: Points
+evalBlackPieces :: [Char] -> Int
+evalBlackPieces b = -1 * (evalWhitePieces b)
+
+-- smallest distance between pawn and enemy flag; lower distance => higher board evaluation value
+-- uses Manhattan distance to calculate this value
+-- first call should use minDistance = 9999 or some other really high value
+-- end result is negated so that a higher distance will result in a lower evaluation
+pawnToFlag :: [Int] -> [Int] -> Int -> Int -> Int
+pawnToFlag [] flagInds boardSize minDistance = -1*minDistance
+pawnToFlag (i:indices) flagInds boardSize minDistance
+ | flagInds == [] = 99999
+ | flagInds == [] = minDistance
+ | otherwise = pawnToFlag indices flagInds boardSize (min minDistance ((abs((div i boardSize)-(div (head flagInds) boardSize))) + abs((mod i boardSize)-(mod (head flagInds) boardSize))))
+
+-- distance from flag to enemy side; simple y-axis calculation
+-- similar to pawnToFlag above
+flagToEnemy ::  Char -> [Char] -> Int
+flagToEnemy flag board
+ | (elemIndices flag board) == [] = -99999
+ | flag == 'B' = -1*(div (head (elemIndices flag board)) (boardSize board))
+ | otherwise = -1*((boardSize board) - (head (elemIndices flag board)))
+
+-- | Counts the number occurances of x in list
+countOccurance :: Char -> [Char] -> Int
+countOccurance x list = (length . filter (==x)) list
+-}

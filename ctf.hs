@@ -38,6 +38,14 @@ test10 = capture ["----WwwB-"] 'w' 1
 test10a = map (minimax 'b' (1-1)  []) (genMoves "----WwwB-" [] (getIndices 'w' "----WwwB-") [])
 test11 = map (minimax (other 'b') (1-1) []) (genMoves "-Www--bBb" ["wWw---bBb"] (getIndices ('b') "-Www--bBb") [])
 test11a = genMoves "-Www--bBb" ["wWw---bBb"] (getIndices ('b') "-Www--bBb") []
+test12 = capture ["wWw---bBb"] 'w' 2
+test13 = capture ["-W--Bw---"] 'w' 1
+test13a = genMoves "-W--Bw---" [] (getIndices 'w' "-W--Bw---") []
+test13b = map (minimax 'b' 0 []) test13a
+test13c = map (staticeval 'b' []) test13a
+test14a = capture ["bWww-b-B-"] 'w' 1 -- good
+test14b = capture ["bWww-b-B-"] 'w' 2 -- good
+test14c = capture ["bWww-b-B-"] 'w' 3 -- bad
 
 -- | gets index of max element of list
 maxi xs = snd . head . reverse . sort $ zip xs [0..]
@@ -51,23 +59,30 @@ mini xs = snd . head . sort $ zip xs [0..]
 capture (b:history) p d 
  | p == 'w' = (genMoves b history (getIndices p b) [])!!(maxi $ map (minimax (other p) (d-1) history) (genMoves b history (getIndices p b) []))
  | p == 'b' = (genMoves b history (getIndices p b) [])!!(mini $ map (minimax (other p) (d-1) history) (genMoves b history (getIndices p b) []))
+-- | p == 'w' = map (minimax (other p) (d-1) history) (genMoves b history (getIndices p b) [])
 
 -- | evals subroutine. 
 -- | intput: player depth history board
 -- | returns the minimax eval of the given board for other params
-minimax p 0 h b = staticeval (b:h) p
+minimax p 0 h b = staticeval p h b
 minimax p d h b
--- max level. White tries to get maximum score always 
+-- | empty list check
+-- | TODO:
+-- | the error check value might be bad. if we get an empty list then what?
+ | genMoves b (h++[b]) (getIndices (p) b) [] == [] = 0
+-- | max level. White tries to get maximum score always 
  | p == 'w' = maximum $ map (minimax (other p) (d-1) (h++[b])) (genMoves b (h++[b]) (getIndices (p) b) [])
--- min level. Black tries to get minimal score always
+-- | min level. Black tries to get minimal score always
  | p == 'b' = minimum $ map (minimax (other p) (d-1) (h++[b])) (genMoves b (h++[b]) (getIndices (p) b) [])
 
 other :: Char -> Char
 other 'w' = 'b'
 other 'b' = 'w'
 
-staticeval :: [[Char]] -> Char -> Int
-staticeval (b:history) c = (evalPieces b) + (evalMoves (b:history) c)
+-- | input: player history board
+-- | output: score of the board for this player
+staticeval :: Char -> [[Char]] -> [Char] -> Int
+staticeval p h b = (evalPieces b) + (evalMoves (b:h) p)
 
 -- | Static eval of board by counting pieces. Kings 100000, pawns 1.
 -- | Input: single board string, Output: Points+
@@ -76,8 +91,8 @@ evalPieces [] = 0
 evalPieces (x:xs)
  | x == 'w'  = evalPieces xs + 1
  | x == 'b'  = evalPieces xs - 1
- | x == 'W'  = evalPieces xs + 100000
- | x == 'B'  = evalPieces xs - 100000
+ | x == 'W'  = evalPieces xs + 500000
+ | x == 'B'  = evalPieces xs - 500000
  | otherwise = evalPieces xs
 
 -- | Static eval of board by counting possible moves

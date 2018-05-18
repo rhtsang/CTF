@@ -34,9 +34,9 @@ test6 = testallw "-wWw--www-------bbb--bBb-"
 test7 = testallw "--W--ww-b-b--B--"
 test8 = genMoves "---bW--Bw" [] ((elemIndices 'b' "---bW--Bw")++(elemIndices 'B' "---bW--Bw")) []
 test9a = (genMoves "---wW--Bw" [] (getIndices 'w' "---wW--Bw") [])
-test10 = eval ["----WwwB-"] 'w' 1
-test10a = map (evalhelp 'b' (1-1)  []) (genMoves "----WwwB-" [] (getIndices 'w' "----WwwB-") [])
-test11 = map (evalhelp (other 'b') (1-1) []) (genMoves "-Www--bBb" ["wWw---bBb"] (getIndices ('b') "-Www--bBb") [])
+test10 = capture ["----WwwB-"] 'w' 1
+test10a = map (minimax 'b' (1-1)  []) (genMoves "----WwwB-" [] (getIndices 'w' "----WwwB-") [])
+test11 = map (minimax (other 'b') (1-1) []) (genMoves "-Www--bBb" ["wWw---bBb"] (getIndices ('b') "-Www--bBb") [])
 test11a = genMoves "-Www--bBb" ["wWw---bBb"] (getIndices ('b') "-Www--bBb") []
 
 -- | gets index of max element of list
@@ -48,19 +48,19 @@ mini xs = snd . head . sort $ zip xs [0..]
 -- | b - board, c - 'w' or 'd', d - depth, m - level ( 1 for max, 0 for min )
 -- eval [] _ _ = 0
 -- eval (b:boards) h c 1 = (staticeval ([b]++h) c):(eval boards h c 1)
-eval (b:history) p d 
- | p == 'w' = (genMoves b history (getIndices p b) [])!!(maxi $ map (evalhelp (other p) (d-1) history) (genMoves b history (getIndices p b) []))
- | p == 'b' = (genMoves b history (getIndices p b) [])!!(mini $ map (evalhelp (other p) (d-1) history) (genMoves b history (getIndices p b) []))
+capture (b:history) p d 
+ | p == 'w' = (genMoves b history (getIndices p b) [])!!(maxi $ map (minimax (other p) (d-1) history) (genMoves b history (getIndices p b) []))
+ | p == 'b' = (genMoves b history (getIndices p b) [])!!(mini $ map (minimax (other p) (d-1) history) (genMoves b history (getIndices p b) []))
 
 -- | evals subroutine. 
 -- | intput: player depth history board
 -- | returns the minimax eval of the given board for other params
-evalhelp p 0 h b = staticeval (b:h) p
-evalhelp p d h b
--- max level. White trys to get maximum score always 
- | p == 'w' = maximum $ map (evalhelp (other p) (d-1) (h++[b])) (genMoves b (h++[b]) (getIndices (p) b) [])
--- min level. Black trys to get minimal score always
- | p == 'b' = minimum $ map (evalhelp (other p) (d-1) (h++[b])) (genMoves b (h++[b]) (getIndices (p) b) [])
+minimax p 0 h b = staticeval (b:h) p
+minimax p d h b
+-- max level. White tries to get maximum score always 
+ | p == 'w' = maximum $ map (minimax (other p) (d-1) (h++[b])) (genMoves b (h++[b]) (getIndices (p) b) [])
+-- min level. Black tries to get minimal score always
+ | p == 'b' = minimum $ map (minimax (other p) (d-1) (h++[b])) (genMoves b (h++[b]) (getIndices (p) b) [])
 
 other :: Char -> Char
 other 'w' = 'b'

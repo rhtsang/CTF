@@ -34,8 +34,47 @@ test5p = printAllBoards (genMoves "bW---b-Bw" [] [0, 8] [])
 test6 = testallw "-wWw--www-------bbb--bBb-"
 test7 = testallw "--W--ww-b-b--B--"
 test8 = genMoves "---bW--Bw" [] ((elemIndices 'b' "---bW--Bw")++(elemIndices 'B' "---bW--Bw")) []
+test9 = nextmove "---wW--Bw" [] 'w' 1
+test9a = (genMoves "---wW--Bw" [] (getWhiteIndices "---wW--Bw") [])
+test10 = eval ["----W-wBw","---wW-w--","-W-w---Bw","---w-W-Bw"] ["---wW--Bw"] 'w' 1
 
+-- | gets index of max element of list
+maxi xs = snd . head . reverse . sort $ zip xs [0..]
 
+-- | b is board, h is histroy, d is depth
+nextmove b h 'w' 1 = (genMoves b h (getWhiteIndices b) [])!!(maxi $ map evalWhitePieces (genMoves b h (getWhiteIndices b) []))
+-- nextmove b h 'b' 1 = (genMoves b h (getBlackIndices b) [])!!(maxi $ map evalBlackPieces (genMoves b h (getBlackIndices b) []))
+
+eval [] _ _ _ = []
+eval (b:boards) h c 1 = (staticeval [b] c):(eval boards h c 1)
+
+staticeval :: [[Char]] -> Char -> Int
+staticeval (b:history) c = (evalPieces b) + (evalMoves (b:history) c)
+
+-- | Static eval of board for white by counting pieces. Kings 100000, pawns 1.
+-- | Input: single board string, Output: Points+
+evalPieces :: [Char] -> Int
+evalPieces [] = 0
+evalPieces (x:xs)
+ | x == 'w'  = 1 + evalPieces xs
+ | x == 'b'  = -1 + evalPieces xs
+ | x == 'W'  = 100000 + evalPieces xs
+ | x == 'B'  = -100000 + evalPieces xs
+ | otherwise = evalPieces xs
+
+-- | evaluate the move advantage for 'w' or 'b'
+-- | if its white turn and there are no white moves white loses. same for black
+evalMoves :: [[Char]] -> Char -> Int
+evalMoves [] _ = 0
+evalMoves (b:history) 'w'
+ | (length (genMoves b history (getWhiteIndices b) [])) == 0 = -100000
+ | (length (genMoves b history (getBlackIndices b) [])) == 0 = 100000
+ | otherwise = (length (genMoves b history (getWhiteIndices b) [])) - (length (genMoves b history (getBlackIndices b) []))
+
+evalMoves (b:history) 'b'
+ | (length (genMoves b history (getBlackIndices b) [])) == 0 = 100000
+ | (length (genMoves b history (getWhiteIndices b) [])) == 0 = -100000
+ | otherwise = (length (genMoves b history (getWhiteIndices b) [])) - (length (genMoves b history (getBlackIndices b) []))
 
 -- need to rethink error checking for empty lists: currently does like 2x redundant computations
 -- boards: list of boards at current level (min/max)

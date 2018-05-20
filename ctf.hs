@@ -24,28 +24,11 @@ how to get all 'w's
 elemIndices 'w' "---ww---"
 -}
 
-testallw board = printAllBoards (genMoves board [] (elemIndices 'w' board) [])
-test1 = printAllBoards (genMoves "-wWw--www-------bbb--bBb-" [] [6,7] [])
-test2 = printAllBoards (genMoves "-wWw-w-ww-------bbb--bBb-" ["-wWw--www-------bbb--bBb-"] [6,7] [])
-test3 = printAllBoards (genMoves "-Ww---bB-" [] [1, 2] [])
-test4 = printAllBoards (genMoves "-W---b-Bw" [] [1, 8] [])
-test5p = printAllBoards (genMoves "bW---b-Bw" [] [0, 8] [])
-test6 = testallw "-wWw--www-------bbb--bBb-"
-test7 = testallw "--W--ww-b-b--B--"
-test8 = genMoves "---bW--Bw" [] ((elemIndices 'b' "---bW--Bw")++(elemIndices 'B' "---bW--Bw")) []
-test9a = (genMoves "---wW--Bw" [] (getIndices 'w' "---wW--Bw") [])
-test10 = capture ["----WwwB-"] 'w' 1
-test10a = map (minimax 'b' (1-1)  []) (genMoves "----WwwB-" [] (getIndices 'w' "----WwwB-") [])
-test11 = map (minimax (other 'b') (1-1) []) (genMoves "-Www--bBb" ["wWw---bBb"] (getIndices ('b') "-Www--bBb") [])
-test11a = genMoves "-Www--bBb" ["wWw---bBb"] (getIndices ('b') "-Www--bBb") []
-test12 = capture ["wWw---bBb"] 'w' 2
-test13 = capture ["-W--Bw---"] 'w' 1
-test13a = genMoves "-W--Bw---" [] (getIndices 'w' "-W--Bw---") []
-test13b = map (minimax 'b' 0 []) test13a
-test13c = map (staticeval 'b' []) test13a
-test14a = capture ["bWww-b-B-"] 'w' 1 -- good
-test14b = capture ["bWww-b-B-"] 'w' 2 -- good
-test14c = capture ["bWww-b-B-"] 'w' 3 -- bad
+
+test1a = capture ["bWww-b-B-"] 'w' 1
+test1b = capture ["bWww-b-B-"] 'w' 2
+test1c = capture ["bWww-b-B-"] 'w' 3
+test2 n = capture ["-W-w-bbBw"] 'b' n
 
 -- | gets index of max element of list
 maxi xs = snd . head . reverse . sort $ zip xs [0..]
@@ -56,12 +39,12 @@ mini xs = snd . head . sort $ zip xs [0..]
 -- | b - board, c - 'w' or 'd', d - depth, m - level ( 1 for max, 0 for min )
 -- eval [] _ _ = 0
 -- eval (b:boards) h c 1 = (staticeval ([b]++h) c):(eval boards h c 1)
-capture (b:history) p d 
- | p == 'w' = (genMoves b history (getIndices p b) [])!!(maxi $ map (minimax (other p) (d-1) history) (genMoves b history (getIndices p b) []))
- | p == 'b' = (genMoves b history (getIndices p b) [])!!(mini $ map (minimax (other p) (d-1) history) (genMoves b history (getIndices p b) []))
--- | p == 'w' = map (minimax (other p) (d-1) history) (genMoves b history (getIndices p b) [])
+capture (b:history) p d
+ | p == 'w' = (moves (b:history) p)!!(maxi $ map (minimax (other p) (d-1) history) (moves (b:history) p))
+ | p == 'b' = (moves (b:history) p)!!(mini $ map (minimax (other p) (d-1) history) (moves (b:history) p))
+-- | p == 'w' = map (minimax (other p) (d-1) history) (moves (b:history) p)
 
--- | evals subroutine. 
+-- | evals subroutine.
 -- | intput: player depth history board
 -- | returns the minimax eval of the given board for other params
 minimax p 0 h b = staticeval p h b
@@ -69,11 +52,11 @@ minimax p d h b
 -- | empty list check
 -- | TODO:
 -- | the error check value might be bad. if we get an empty list then what?
- | genMoves b (h++[b]) (getIndices (p) b) [] == [] = 0
--- | max level. White tries to get maximum score always 
- | p == 'w' = maximum $ map (minimax (other p) (d-1) (h++[b])) (genMoves b (h++[b]) (getIndices (p) b) [])
+ | (moves (b:(h++[b])) p) == [] = 0
+-- | max level. White tries to get maximum score always
+ | p == 'w' = maximum $ map (minimax (other p) (d-1) (h++[b])) (moves (b:(h++[b])) p)
 -- | min level. Black tries to get minimal score always
- | p == 'b' = minimum $ map (minimax (other p) (d-1) (h++[b])) (genMoves b (h++[b]) (getIndices (p) b) [])
+ | p == 'b' = minimum $ map (minimax (other p) (d-1) (h++[b])) (moves (b:(h++[b])) p)
 
 other :: Char -> Char
 other 'w' = 'b'
@@ -83,6 +66,7 @@ other 'b' = 'w'
 -- | output: score of the board for this player
 staticeval :: Char -> [[Char]] -> [Char] -> Int
 staticeval p h b = (evalPieces b) + (evalMoves (b:h) p)
+
 
 -- | Static eval of board by counting pieces. Kings 100000, pawns 1.
 -- | Input: single board string, Output: Points+
@@ -114,6 +98,12 @@ getIndices 'b' board = (elemIndices 'b' board) ++ (elemIndices 'B' board)
 
 -- | Calculates the dimension of the board
 boardSize board = (round (sqrt (fromIntegral (length board))))
+
+
+moves (b:h) p
+ | p == 'w' && elemIndices 'W' b == [] = []
+ | p == 'b' && elemIndices 'B' b == [] = []
+ | otherwise = genMoves b h (getIndices p b) []
 
 -- | Given a board and a history of moves and a list of pieces (indices)
 -- | generates all possible moves for the given pieces

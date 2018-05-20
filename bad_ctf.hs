@@ -66,14 +66,14 @@ minimax :: [[Char]] -> [[Char]] -> Char -> Int -> Int -> [Int]
 minimax [] _ _ _ _ = []
 
 minimax (b:boards) history 'w' level depth
- | depth == 0 = (evalAll (b:boards) history 'b')
+ | depth == 0 = (evalAll (b:boards) history 'w')
  | depth == 1 && level == 1 = [mymax (evalAll (genMoves b history ((elemIndices 'w' b)++(elemIndices 'W' b)) []) history 'w')]++(minimax boards history 'w' level depth)
  | depth == 1 && level == 0 = [mymin (evalAll (genMoves b history ((elemIndices 'b' b)++(elemIndices 'B' b)) []) history 'w')]++(minimax boards history 'b' level depth)
  | level == 1 = [mymax (minimax (genMoves b history (getWhiteIndices b) []) history 'b' (mod (level+1) 2) (depth-1))]++(minimax boards history 'w' level depth)
  | level == 0 = [mymin (minimax (genMoves b history (getBlackIndices b) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax boards history 'b' level depth)
 
 minimax boards history 'b' level depth
- | depth == 0 = (evalAll boards history 'w')
+ | depth == 0 = (evalAll boards history 'b')
  | depth == 1 && level == 1 = [mymax (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'b')]++(minimax (tail boards) history 'b' level depth)
  | depth == 1 && level == 0 = [mymin (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w')]++(minimax (tail boards) history 'w' level depth)
  | level == 1 = [mymax (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'b' level depth)

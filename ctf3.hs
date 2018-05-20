@@ -23,27 +23,24 @@ import Data.Char
 -}
 
 -- | tests
-test14a = printBoard $ capture ["bWww-b-B-"] 'w' 1 -- good
-test14b = printBoard $ capture ["bWww-b-B-"] 'w' 2 -- good
-test14c = printBoard $ capture ["bWww-b-B-"] 'w' 3 -- bad
+test1a = printBoard $ capture ["bWww-b-B-"] 'w' 1
+test1b = printBoard $ capture ["bWww-b-B-"] 'w' 2
+test1c = printBoard $ capture ["bWww-b-B-"] 'w' 3
+test2a = printBoard $ capture ["-W-b-wwBb"] 'b' 1
+test2b = printBoard $ capture ["-W-b-wwBb"] 'b' 2
+test2c = printBoard $ capture ["-W-b-wwBb"] 'b' 3
+test3 n = capture2 ["-W-b-wwBb"] 'b' n
+
+-- |    Helper functions:
 
 -- | gets other player color
 other :: Char -> Char
 other 'w' = 'b'
 other 'b' = 'w'
 
-capture :: [[Char]] -> Char -> Int -> [Char]
-capture (board:history) turn depth
- | turn == 'w' = (genMoves board history (getWhiteIndices board) [])!!
-    (head (elemIndices (maximum (minimax (genMoves board history (getWhiteIndices board) []) history 'b' 0 (depth-1)))
-                       (minimax (genMoves board history (getWhiteIndices board) []) history 'b' 0 (depth-1))
-          )
-    )
- | turn == 'b' = (genMoves board history (getBlackIndices board) [])!!
-    (head (elemIndices (maximum (minimax (genMoves board history (getBlackIndices board) []) history 'w' 0 (depth-1)))
-                       (minimax (genMoves board history (getBlackIndices board) []) history 'w' 0 (depth-1))
-          )
-    )
+-- | gets index of max element of list
+maxi :: (Ord a, Ord c, Num c, Enum c) => [a] -> c
+maxi xs = snd . head . reverse . sort $ zip xs [0..]
 
 -- wrapper functions for maximum and minimum to handle empty lists
 mymax :: [Int] -> Int
@@ -55,29 +52,37 @@ mymin [] = 99999
 mymin boards = minimum boards
 
 
+-- | Input: List of previous boards with current board as head, player, depth
+-- | b - board, h - history, p - player, d - depth
+capture :: [[Char]] -> Char -> Int -> [Char]
+capture (b:h) p d = (genMoves b h (getIndices p b) [])!!
+                      (maxi $ minimax (genMoves b h (getIndices p b) []) h (other p) 0 (d-1))
+
+capture2 (b:h) p d
+  = minimax (genMoves b h (getIndices p b) []) h (other p) 0 (d-1)
+
 -- need to rethink error checking for empty lists: currently does like 2x redundant computations
 -- boards: list of boards at current level (min/max)
 -- depth: depth of minimax algorithm to go to
+-- | Input:
+-- | List of boards at current level (b:bs), history (h), player (p),
+-- | level of minimax 0 for min, 1 for max (lvl), depth of search (d)
+-- | Output: List of scores for the boards
 minimax :: [[Char]] -> [[Char]] -> Char -> Int -> Int -> [Int]
-
--- | case 1: empty board
+-- | empty board
 minimax [] _ _ _ _ = []
--- | case 2: depth = 0
-minimax (b:boards) history p level 0 = [mymax (evalAll (b:boards) history p)]
+-- | depth == 0
+minimax (b:bs) h p level 0 = [mymax (evalAll (b:bs) h p)]
+-- | depth == 1
+minimax (b:bs) h  p  1 1 = [mymax (evalAll (genMoves b h (getIndices p b) []) h p)]++(minimax bs h p 1 1)
+minimax (b:bs) h 'w' 0 1 = [mymin (evalAll (genMoves b h (getIndices 'b' b) []) h 'w')]++(minimax bs h 'b' 1 1)
+minimax (b:bs) h 'b' 0 1 = [mymin (evalAll (genMoves b h (getIndices 'w' b) []) h 'w')]++(minimax bs h 'w' 0 1)
+-- | depth > 1
+minimax (b:bs) h p 1 d = [mymax $ minimax (genMoves b h (getIndices  p  b) []) h (other p) 0 (d-1)]++(minimax bs h p 1 d)
+minimax (b:bs) h p 0 d = [mymin (minimax (genMoves b h (getIndices 'b' b) []) h 'w'       1 (d-1))]++(minimax bs h (other p) 0 d)
 
-minimax (b:boards) history 'w' level depth
- | depth == 1 && level == 1 = [mymax (evalAll (genMoves b history (getIndices 'w' b) []) history 'w')]++(minimax boards history 'w' level depth)
- | depth == 1 && level == 0 = [mymin (evalAll (genMoves b history (getIndices 'b' b) []) history 'w')]++(minimax boards history 'b' level depth)
- | level == 1 = [mymax (minimax (genMoves b history (getWhiteIndices b) []) history 'b' (mod (level+1) 2) (depth-1))]++(minimax boards history 'w' level depth)
- | level == 0 = [mymin (minimax (genMoves b history (getBlackIndices b) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax boards history 'b' level depth)
 
-minimax boards history 'b' level depth
- | depth == 1 && level == 1 = [mymax (evalAll (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'b')]++(minimax (tail boards) history 'b' level depth)
- | depth == 1 && level == 0 = [mymin (evalAll (genMoves (head boards) history ((elemIndices 'w' (head boards))++(elemIndices 'W' (head boards))) []) history 'w')]++(minimax (tail boards) history 'w' level depth)
- | level == 1 = [mymax (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'b' level depth)
- | level == 0 = [mymin (minimax (genMoves (head boards) history ((elemIndices 'b' (head boards))++(elemIndices 'B' (head boards))) []) history 'w' (mod (level+1) 2) (depth-1))]++(minimax (tail boards) history 'w' level depth)
-
-minimax boards history _ level depth = []
+minimax boards h _ lvl d = []
 
 
 evalAll :: [[Char]] -> [[Char]] -> Char -> [Int]

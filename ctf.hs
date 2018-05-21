@@ -13,7 +13,11 @@ test5w n = capture ["bW----wB-"] 'w' n
 test5b n = capture ["Wb----wB-"] 'b' n
 test6w n = capture [""] 'w' n
 
--- | b - board, c - 'w' or 'd', d - depth, m - level ( 1 for max, 0 for min )
+-- top-level capture function that tells the user what move to make
+-- inputs:
+--   (b:h): list of current board and past boards
+--   p: the player's turn, 'b' or 'w'
+--   d: the depth to pass into the minimax function
 capture :: [[Char]] -> Char -> Int -> [Char]
 capture (b:h) _ 0 = b
 capture (b:history) p d
@@ -38,11 +42,16 @@ minimax p d h b
  | p == 'b' = mymin $ map (minimax (other p) (d-1) (h++[b])) (moves (b:(h++[b])) p)
 
 
-
+-- strategy: Each piece has a value, 1 for pawn and 500000 for flag.
+--   The more possible moves a board has, the more points it has.
+--   The closer a pawn is to the enemy flag, the better the board is.
+--   Similarly, the closer your flag is to the enemy side, the better the board is. 
 -- | input: player history board
 -- | output: score of the board for this player
 staticeval :: Char -> [[Char]] -> [Char] -> Int
-staticeval p h b = (evalPieces b) + (evalMoves (b:h) p)
+staticeval p h b
+ | p == 'w' = (evalPieces b) + (evalMoves (b:h) p) + (pawnToFlag (elemIndices p b) (elemIndices (flag p) b) (boardSize b) 99999) + (flagToEnemy 'W' b)
+ | p == 'b' = (evalPieces b) + (evalMoves (b:h) p) - (pawnToFlag (elemIndices p b) (elemIndices (flag p) b) (boardSize b) 99999) - (flagToEnemy 'B' b)
 
 -- | Static eval of board by counting pieces. Kings 100000, pawns 1.
 -- | Input: single board string, Output: Points+
@@ -64,6 +73,28 @@ evalMoves (b:history) p
  | (length (genMoves b history (getIndices (other p) b) [])) == 0 = 100000
  | otherwise = 0
 
+-- smallest distance between pawn and enemy flag; lower distance => higher board evaluation value
+-- uses Manhattan distance to calculate this value
+-- first call should use minDistance = 9999 or some other really high value
+-- end result is negated so that a higher distance will result in a lower evaluation
+-- inputs: indices of pawns, flag indices, board size, minimum distance (to begin comparing with)
+-- output: value of board based on how close your pawn is to capturing enemy flag
+pawnToFlag :: [Int] -> [Int] -> Int -> Int -> Int
+pawnToFlag [] flagInds boardSize minDistance = -1*minDistance
+pawnToFlag (i:indices) flagInds boardSize minDistance
+ | flagInds == [] = 99999
+ | flagInds == [] = minDistance
+ | otherwise = pawnToFlag indices flagInds boardSize (min minDistance ((abs((div i boardSize)-(div (head flagInds) boardSize))) + abs((mod i boardSize)-(mod (head flagInds) boardSize))))
+
+-- distance from flag to enemy side; simple y-axis calculation
+-- similar to pawnToFlag above
+-- inputs: flag 'B' or 'W', board
+-- output: value of board based on how close flag is to enemy side
+flagToEnemy ::  Char -> [Char] -> Int
+flagToEnemy flag board
+ | (elemIndices flag board) == [] = -99999
+ | flag == 'B' = -1*(div (head (elemIndices flag board)) (boardSize board))
+ | otherwise = -1*((boardSize board) - (head (elemIndices flag board)))
 
 -- | Helper functions :
 

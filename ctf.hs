@@ -9,9 +9,9 @@ test2 n = capture ["-W-w-bbBw"] 'b' n
 test3 n = capture ["www---bBb"] 'w' n
 test3b n = capture ["www---bBb"] 'b' n
 test4w n = capture ["wWBb"] 'w' n
-test5w n = capture ["W-----wB-"] 'w' n
-test5b n = capture ["W-----wB-"] 'b' n
-test6w n = capture [""]
+test5w n = capture ["bW----wB-"] 'w' n
+test5b n = capture ["Wb----wB-"] 'b' n
+test6w n = capture [""] 'w' n
 
 -- | b - board, c - 'w' or 'd', d - depth, m - level ( 1 for max, 0 for min )
 capture :: [[Char]] -> Char -> Int -> [Char]
@@ -31,7 +31,7 @@ minimax p 0 h b = staticeval p h b
 minimax p d h b
 -- | empty list check
  | (moves (b:(h++[b])) p) == [] = 0
-
+ -- | win p (b:h) == 1 = staticeval p h b
 -- | max level. White tries to get maximum score always
  | p == 'w' = mymax $ map (minimax (other p) (d-1) (h++[b])) (moves (b:(h++[b])) p)
 -- | min level. Black tries to get minimal score always
@@ -123,8 +123,8 @@ win p (b:h)
  | elemIndices (other p) b == []      = 1
  | elemIndices (otherflag p) b == []  = 1
  | moves (b:h) (other p) == []        = 1
- | p == 'w' && (((maximum $ elemIndices 'W' b) - (maximum $ elemIndices 'b' b)) > 0) = 1
- | p == 'b' && (((minimum $ elemIndices 'B' b) - (minimum $ elemIndices 'w' b)) < 0) = 1
+ | p == 'w' && (((maximum $ elemIndices 'W' b) - (maximum $ elemIndices 'b' b)) > (boardSize b)) = 1
+ | p == 'b' && (((minimum $ elemIndices 'B' b) - (minimum $ elemIndices 'w' b)) < (boardSize b)) = 1
  | otherwise = 0
 
 

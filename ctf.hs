@@ -1,17 +1,13 @@
+{-
+ECS 140B
+Capture the Flag Project
+Spring 2018
+Raymond Tsang 912868864
+Pavel Kuzkin 912807074
+-}
+
 import Data.List
 import Data.Char
-
--- d = 1 should capture, d = 2 should realize that capturing will lose the game
-test0w n = capture ["-------------------------"] 'w' n
-test0b n = capture ["-------------------------"] 'b' n
-test1 n = capture ["bWww-b-B-"] 'w' n
-test2 n = capture ["-W-w-bbBw"] 'b' n
-test3 n = capture ["www---bBb"] 'w' n
-test3b n = capture ["www---bBb"] 'b' n
-test4w n = capture ["wWBb"] 'w' n
-test5w n = capture ["bW----wB-"] 'w' n
-test5b n = capture ["Wb----wB-"] 'b' n
-test6w n = capture [""] 'w' n
 
 -- top-level capture function that tells the user what move to make
 -- inputs:
@@ -34,8 +30,9 @@ minimax :: Char -> Int -> [[Char]] -> [Char] -> Int
 minimax p 0 h b = staticeval p h b
 minimax p d h b
 -- | empty list check
- | (moves (b:(h++[b])) p) == [] = 0
- -- | win p (b:h) == 1 = staticeval p h b
+ | (moves (b:(h++[b])) p) == [] && p == 'w' = -200000
+ | (moves (b:(h++[b])) p) == [] && p == 'b' = 200000
+ | win p (b:h) == 1 = staticeval p h b
 -- | max level. White tries to get maximum score always
  | p == 'w' = mymax $ map (minimax (other p) (d-1) (h++[b])) (moves (b:(h++[b])) p)
 -- | min level. Black tries to get minimal score always
@@ -45,13 +42,13 @@ minimax p d h b
 -- strategy: Each piece has a value, 1 for pawn and 500000 for flag.
 --   The more possible moves a board has, the more points it has.
 --   The closer a pawn is to the enemy flag, the better the board is.
---   Similarly, the closer your flag is to the enemy side, the better the board is. 
+--   Similarly, the closer your flag is to the enemy side, the better the board is.
 -- | input: player history board
 -- | output: score of the board for this player
 staticeval :: Char -> [[Char]] -> [Char] -> Int
 staticeval p h b
- | p == 'w' = (evalPieces b) + (evalMoves (b:h) p) + (pawnToFlag (elemIndices p b) (elemIndices (flag p) b) (boardSize b) 99999) + (flagToEnemy 'W' b)
- | p == 'b' = (evalPieces b) + (evalMoves (b:h) p) - (pawnToFlag (elemIndices p b) (elemIndices (flag p) b) (boardSize b) 99999) - (flagToEnemy 'B' b)
+ | p == 'w' = (evalPieces b) + (evalMoves (b:h) p)
+ | p == 'b' = (evalPieces b) + (evalMoves (b:h) p)
 
 -- | Static eval of board by counting pieces. Kings 100000, pawns 1.
 -- | Input: single board string, Output: Points+
@@ -69,32 +66,9 @@ evalPieces (x:xs)
 evalMoves :: [[Char]] -> Char -> Int
 evalMoves [] _ = 0
 evalMoves (b:history) p
- | (length (genMoves b history (getIndices p b) [])) == 0 = -100000
- | (length (genMoves b history (getIndices (other p) b) [])) == 0 = 100000
+ | (length (genMoves b history (getIndices 'w' b) [])) == 0 = -100000
+ | (length (genMoves b history (getIndices 'b' b) [])) == 0 = 100000
  | otherwise = 0
-
--- smallest distance between pawn and enemy flag; lower distance => higher board evaluation value
--- uses Manhattan distance to calculate this value
--- first call should use minDistance = 9999 or some other really high value
--- end result is negated so that a higher distance will result in a lower evaluation
--- inputs: indices of pawns, flag indices, board size, minimum distance (to begin comparing with)
--- output: value of board based on how close your pawn is to capturing enemy flag
-pawnToFlag :: [Int] -> [Int] -> Int -> Int -> Int
-pawnToFlag [] flagInds boardSize minDistance = -1*minDistance
-pawnToFlag (i:indices) flagInds boardSize minDistance
- | flagInds == [] = 99999
- | flagInds == [] = minDistance
- | otherwise = pawnToFlag indices flagInds boardSize (min minDistance ((abs((div i boardSize)-(div (head flagInds) boardSize))) + abs((mod i boardSize)-(mod (head flagInds) boardSize))))
-
--- distance from flag to enemy side; simple y-axis calculation
--- similar to pawnToFlag above
--- inputs: flag 'B' or 'W', board
--- output: value of board based on how close flag is to enemy side
-flagToEnemy ::  Char -> [Char] -> Int
-flagToEnemy flag board
- | (elemIndices flag board) == [] = -99999
- | flag == 'B' = -1*(div (head (elemIndices flag board)) (boardSize board))
- | otherwise = -1*((boardSize board) - (head (elemIndices flag board)))
 
 -- | Helper functions :
 
